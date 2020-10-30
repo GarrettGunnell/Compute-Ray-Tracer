@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 
+[ExecuteInEditMode, ImageEffectAllowedInSceneView]
 public class RayTracingMaster : MonoBehaviour {
     
     public ComputeShader RayTracingShader;
@@ -8,6 +9,13 @@ public class RayTracingMaster : MonoBehaviour {
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination) {
         InitRenderTexture();
+
+        RayTracingShader.SetTexture(0, "Result", target);
+        int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
+        int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
+        RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
+
+        Graphics.Blit(target, destination);
     }
 
     private void InitRenderTexture() {
