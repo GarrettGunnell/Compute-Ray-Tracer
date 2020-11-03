@@ -4,6 +4,7 @@ public class RayTracingMaster : MonoBehaviour {
     
     public ComputeShader RayTracingShader;
     public Texture SkyboxTexture;
+    public Light DirectionalLight;
 
     private RenderTexture target;
     private uint currentSample = 0;
@@ -13,6 +14,11 @@ public class RayTracingMaster : MonoBehaviour {
         if (transform.hasChanged) {
             currentSample = 0;
             transform.hasChanged = false;
+        }
+
+        if (DirectionalLight.transform.hasChanged) {
+            Vector3 l = DirectionalLight.transform.forward;
+            RayTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, DirectionalLight.intensity));
         }
     }
 
@@ -24,6 +30,8 @@ public class RayTracingMaster : MonoBehaviour {
         RayTracingShader.SetMatrix("_CameraInverseProjection", camera.projectionMatrix.inverse);
         RayTracingShader.SetTexture(0, "_SkyboxTexture", SkyboxTexture);
         RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
+        Vector3 l = DirectionalLight.transform.forward;
+        RayTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, DirectionalLight.intensity));
 
         RayTracingShader.SetTexture(0, "Result", target);
         int threadGroupsX = Mathf.CeilToInt(Screen.width / 8.0f);
