@@ -54,6 +54,8 @@ struct Sphere {
     float3 specular;
 };
 
+StructuredBuffer<Sphere> _Spheres;
+
 Ray CreateCameraRay(float2 uv) {
     float3 origin = mul(_CameraToWorld, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
     float3 direction = mul(_CameraInverseProjection, float4(uv, 0.0f, 1.0f)).xyz;
@@ -70,8 +72,8 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.distance = t;
         bestHit.position = ray.origin + t * ray.direction;
         bestHit.normal = float3(0.0f, 1.0f, 0.0f);
-        bestHit.albedo = float3(0.0f, 0.0f, 0.0f);
-        bestHit.specular = float3(0.0f, 0.0f, 0.0f);
+        bestHit.albedo = float3(0.2f, 0.2f, 0.3f);
+        bestHit.specular = float3(0, 0, 0);
     }
 }
 
@@ -95,17 +97,11 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere) {
 
 RayHit Trace(Ray ray) {
     RayHit bestHit = CreateRayHit();
-    float x = 0.0f;
-    float z = 0.0f;
+    uint numSpheres, stride;
+    _Spheres.GetDimensions(numSpheres, stride);
 
-    for (int i = 0; i < 20; ++i, x += 3) {
-        if (x == 15) {
-            z += 3.0f;
-            x = 0.0f;
-        }
-
-        IntersectSphere(ray, bestHit, float4(x, 1.0f, z, 1.0f));
-    }
+    for (uint i = 0; i < numSpheres; ++i)
+        IntersectSphere(ray, bestHit, _Spheres[i]);
 
     IntersectGroundPlane(ray, bestHit);
 
@@ -114,12 +110,9 @@ RayHit Trace(Ray ray) {
 
 float3 Shade(inout Ray ray, RayHit hit) {
     if (hit.distance < 1.#INF) {
-        float3 specular = float3(0.1f, 0.1f, 0.1f);
-        float3 albedo = float3(0.8f, 0.8f, 0.8f);
-
         ray.origin = hit.position + hit.normal * 0.001f;
         ray.direction = reflect(ray.direction, hit.normal);
-        ray.energy *= specular;
+        ray.energy *= hit.specular;
 
         bool shadow = false;
         Ray shadowRay = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
@@ -128,7 +121,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
             return float3(0.0f, 0.0f, 0.0f);
         }
 
-        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * albedo;
+        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
     } else {
         ray.energy = 0.0f;
 
