@@ -5,6 +5,7 @@ using UnityEngine;
 public class RayTracingMaster : MonoBehaviour {
     
     public ComputeShader RayTracingShader;
+    public ComputeShader RandomSpheresShader;
     public Texture SkyboxTexture;
     public Light DirectionalLight;
 
@@ -27,6 +28,23 @@ public class RayTracingMaster : MonoBehaviour {
     private void OnEnable() {
         currentSample = 0;
         SetUpScene();
+        SetUpSceneWithCompute();
+    }
+
+    private void SetUpSceneWithCompute() {
+        float[] data = new float[24];
+
+        ComputeBuffer buffer = new ComputeBuffer(data.Length, sizeof(float));
+        buffer.SetData(data);
+        int kernel = RandomSpheresShader.FindKernel("CSMain");
+        RandomSpheresShader.SetBuffer(kernel, "_SphereBuffer", buffer);
+        RandomSpheresShader.Dispatch(kernel, data.Length, 1, 1);
+        buffer.GetData(data);
+        foreach(float i in data) {
+            Debug.Log(i);
+        }
+
+        buffer.Release();
     }
 
     private void SetUpScene() {
