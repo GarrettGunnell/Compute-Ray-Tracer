@@ -1,8 +1,5 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+﻿#pragma kernel CSMain
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
 RWTexture2D<float4> Result;
 float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
@@ -114,12 +111,11 @@ float3 Shade(inout Ray ray, RayHit hit) {
         ray.direction = reflect(ray.direction, hit.normal);
         ray.energy *= hit.specular;
 
-        bool shadow = false;
         Ray shadowRay = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
         RayHit shadowHit = Trace(shadowRay);
-        if (shadowHit.distance != 1.#INF) {
+
+        if (shadowHit.distance != 1.#INF)
             return float3(0.0f, 0.0f, 0.0f);
-        }
 
         return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
     } else {
@@ -128,6 +124,15 @@ float3 Shade(inout Ray ray, RayHit hit) {
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5;
         return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).rgb * 2;
+    }
+}
+
+void bounce(Ray ray, inout float3 result) {
+    for (int i = 0; i < 8; ++i) {
+        RayHit hit = Trace(ray);
+        result += ray.energy * Shade(ray, hit);
+
+        if (!any(ray.energy)) return;
     }
 }
 
@@ -142,12 +147,7 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
 
     float3 result = float3(0, 0, 0);
 
-    for (int i = 0; i < 8; ++i) {
-        RayHit hit = Trace(ray);
-        result += ray.energy * Shade(ray, hit);
-
-        if (!any(ray.energy)) break;
-    }
+    bounce(ray, result);
     
     Result[id.xy] = float4(result, 1);
 }

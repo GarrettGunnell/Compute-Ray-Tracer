@@ -27,7 +27,6 @@ public class RayTracingMaster : MonoBehaviour {
 
     private void OnEnable() {
         currentSample = 0;
-        //SetUpScene();
         SetUpSceneWithCompute();
     }
 
@@ -35,46 +34,16 @@ public class RayTracingMaster : MonoBehaviour {
         Sphere[] sphereData = new Sphere[maxSpheres];
 
         _SphereBuffer = new ComputeBuffer(sphereData.Length, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Sphere)));
-        int kernel = RandomSpheresShader.FindKernel("CSMain");
+        int kernel = RandomSpheresShader.FindKernel("InitSpheres");
         RandomSpheresShader.SetVector("_SphereRadius", sphereRadius);
         RandomSpheresShader.SetFloat("_PlacementRadius", spherePlacementRadius);
         RandomSpheresShader.SetInt("_Seed", Random.Range(2, 1000));
         RandomSpheresShader.SetBuffer(kernel, "_SphereBuffer", _SphereBuffer);
         RandomSpheresShader.Dispatch(kernel, 8, 1, 1);
+
         kernel = RandomSpheresShader.FindKernel("DiscardSpheres");
         RandomSpheresShader.SetBuffer(kernel, "_SphereBuffer", _SphereBuffer);
         RandomSpheresShader.Dispatch(kernel, 8, 1, 1);
-    }
-
-    private void SetUpScene() {
-        List<Sphere> spheres = new List<Sphere>();
-
-        for (int i = 0; i < maxSpheres; ++i) {
-            Sphere sphere = new Sphere();
-
-            sphere.radius = sphereRadius.x + Random.value * (sphereRadius.y - sphereRadius.x);
-            Vector2 randomPos = Random.insideUnitCircle * spherePlacementRadius;
-            sphere.position = new Vector3(randomPos.x, sphere.radius, randomPos.y);
-
-            foreach (Sphere other in spheres) {
-                float minDist = sphere.radius + other.radius;
-                if (Vector3.SqrMagnitude(sphere.position - other.position) < minDist * minDist)
-                    goto SkipSphere;
-            }
-
-            Color color = Random.ColorHSV();
-            bool metal = Random.value < 0.5f;
-            sphere.albedo = metal ? Vector3.zero : new Vector3(color.r, color.g, color.b);
-            sphere.specular = metal ? new Vector3(color.r, color.g, color.b) : Vector3.one * 0.04f;
-
-            spheres.Add(sphere);
-
-            SkipSphere:
-                continue;
-        }
-
-        _SphereBuffer = new ComputeBuffer(spheres.Count, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Sphere)));
-        _SphereBuffer.SetData(spheres);
     }
 
     private void OnDisable() {

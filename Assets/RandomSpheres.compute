@@ -1,4 +1,4 @@
-﻿#pragma kernel CSMain
+﻿#pragma kernel InitSpheres
 #pragma kernel DiscardSpheres
 
 struct Sphere {
@@ -45,7 +45,7 @@ float2 randPosInUnitCircle() {
 
 
 [numthreads(8,1,1)]
-void CSMain (uint3 id : SV_DispatchThreadID) {
+void InitSpheres(uint3 id : SV_DispatchThreadID) {
     Sphere sphere;
     rng_state = wang_hash(_Seed + id.x);
 
