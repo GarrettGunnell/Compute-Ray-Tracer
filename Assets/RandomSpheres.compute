@@ -7,7 +7,10 @@ struct Sphere {
     float3 specular;
 };
 
-RWStructuredBuffer<float> _SphereBuffer;
+RWStructuredBuffer<Sphere> _SphereBuffer;
+float2 _SphereRadius;
+float _PlacementRadius;
+uint _Seed;
 
 uint rng_state;
 
@@ -27,16 +30,32 @@ uint rand_xorshift() {
     rng_state ^= (rng_state << 13);
     rng_state ^= (rng_state >> 17);
     rng_state ^= (rng_state << 5);
-    
+
     return rng_state;
 }
 
-[numthreads(24,1,1)]
+float randValue() {
+    return rand_xorshift() * (1.0 / 4294967296.0);
+}
+
+float2 randPosInUnitCircle() {
+    return float2((randValue() * 2.0f) - 1.0f, (randValue() * 2.0f) - 1.0f);
+}
+
+
+[numthreads(8,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID) {
     Sphere sphere;
-    rng_state = wang_hash(id.x);
+    rng_state = wang_hash(_Seed + id.x);
 
+    sphere.radius = _SphereRadius.x + randValue() * (_SphereRadius.y - _SphereRadius.x);
+    float2 randPos = randPosInUnitCircle() * _PlacementRadius;
+    sphere.position = float3(randPos.x, sphere.radius, randPos.y);
 
+    float3 color = float3(randValue(), randValue(), randValue());
+    int metal = randValue() < 0.5f ? 1 : 0;
+    sphere.albedo = metal ? float3(0, 0, 0) : color;
+    sphere.specular = metal ? color : float3(0.04f, 0.04f, 0.04f);
 
-    _SphereBuffer[id.x] = float(rand_xorshift()) * (1.0f / 4294967296.0f);
+    _SphereBuffer[id.x] = sphere;
 }
