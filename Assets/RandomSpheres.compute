@@ -1,4 +1,5 @@
 ﻿#pragma kernel CSMain
+#pragma kernel DiscardSpheres
 
 struct Sphere {
     float3 position;
@@ -56,6 +57,27 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     int metal = randValue() < 0.5f ? 1 : 0;
     sphere.albedo = metal ? float3(0, 0, 0) : color;
     sphere.specular = metal ? color : float3(0.04f, 0.04f, 0.04f);
+
+    _SphereBuffer[id.x] = sphere;
+}
+
+[numthreads(8, 1, 1)]
+void DiscardSpheres(uint3 id : SV_DispatchThreadID) {
+    uint numSpheres, stride;
+    _SphereBuffer.GetDimensions(numSpheres, stride);
+
+    Sphere sphere = _SphereBuffer[id.x];
+    for (uint i = id.x + 1; i < numSpheres; ++i) {
+        Sphere otherSphere = _SphereBuffer[i];
+        float minDist = otherSphere.radius + sphere.radius;
+        float3 diffPos = otherSphere.position - sphere.position;
+        float mag = dot(diffPos, diffPos);
+
+        if (mag < minDist * minDist) {
+            sphere.radius = 0.0f;
+            break;
+        }
+    }
 
     _SphereBuffer[id.x] = sphere;
 }

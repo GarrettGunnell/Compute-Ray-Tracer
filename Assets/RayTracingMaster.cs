@@ -35,14 +35,15 @@ public class RayTracingMaster : MonoBehaviour {
         Sphere[] sphereData = new Sphere[maxSpheres];
 
         _SphereBuffer = new ComputeBuffer(sphereData.Length, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Sphere)));
-        _SphereBuffer.SetData(sphereData);
         int kernel = RandomSpheresShader.FindKernel("CSMain");
         RandomSpheresShader.SetVector("_SphereRadius", sphereRadius);
         RandomSpheresShader.SetFloat("_PlacementRadius", spherePlacementRadius);
         RandomSpheresShader.SetInt("_Seed", Random.Range(2, 1000));
         RandomSpheresShader.SetBuffer(kernel, "_SphereBuffer", _SphereBuffer);
         RandomSpheresShader.Dispatch(kernel, 8, 1, 1);
-
+        kernel = RandomSpheresShader.FindKernel("DiscardSpheres");
+        RandomSpheresShader.SetBuffer(kernel, "_SphereBuffer", _SphereBuffer);
+        RandomSpheresShader.Dispatch(kernel, 8, 1, 1);
     }
 
     private void SetUpScene() {
