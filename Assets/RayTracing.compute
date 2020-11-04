@@ -5,7 +5,7 @@ float4x4 _CameraToWorld;
 float4x4 _CameraInverseProjection;
 float4 _DirectionalLight;
 
-Texture2D<float4> _SkyboxTexture;
+TextureCube<float4> _SkyboxTexture;
 SamplerState sampler_SkyboxTexture;
 static const float PI = 3.14159265f;
 
@@ -69,8 +69,8 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.distance = t;
         bestHit.position = ray.origin + t * ray.direction;
         bestHit.normal = float3(0.0f, 1.0f, 0.0f);
-        bestHit.albedo = float3(0.2f, 0.2f, 0.3f);
-        bestHit.specular = float3(0, 0, 0);
+        bestHit.albedo = float3(0.1f, 0.1f, 0.1f);
+        bestHit.specular = float3(0.2f, 0.2f, 0.2f);
     }
 }
 
@@ -123,7 +123,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
 
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5;
-        return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).rgb * 2;
+        return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, ray.direction, 0).rgb;
     }
 }
 
