@@ -10,6 +10,13 @@ public class RayTracingMaster : MonoBehaviour {
     private uint currentSample = 0;
     private Material aliasing;
 
+    struct Sphere {
+        Vector3 position;
+        float radius;
+        Vector3 albedo;
+        Vector3 specular;
+    };
+
     private void Update() {
         if (transform.hasChanged) {
             currentSample = 0;
