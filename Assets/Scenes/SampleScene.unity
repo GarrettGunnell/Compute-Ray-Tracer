@@ -317,7 +317,10 @@ MonoBehaviour:
   sphereRadius: {x: 3, y: 6}
   maxSpheres: 35
   spherePlacementRadius: 35
-  luminanceSource: 2
+  luminanceSource: 0
+  contrastThreshold: 0.0312
+  relativeThreshold: 0.063
+  subpixelBlending: 1
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0
