@@ -149,7 +149,8 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
 
     bounce(ray, result);
 
-    float luminance = 0.2126 * result.r + 0.7152 * result.g + 0.0722 * result.b;
+    float3 linearRGB = pow(saturate(result), 1 / 2.2);
+    float luminance = 0.2126 * linearRGB.r + 0.7152 * linearRGB.g + 0.0722 * linearRGB.b;
     
     Result[id.xy] = float4(result, luminance);
 }
