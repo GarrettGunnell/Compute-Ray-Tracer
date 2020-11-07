@@ -278,7 +278,7 @@ Camera:
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
-  m_AllowMSAA: 1
+  m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
@@ -315,8 +315,9 @@ MonoBehaviour:
   SkyboxTexture: {fileID: 8900000, guid: c8f21f62fdb3e43c5b32917c84683698, type: 3}
   DirectionalLight: {fileID: 705507994}
   sphereRadius: {x: 3, y: 6}
-  maxSpheres: 60
+  maxSpheres: 35
   spherePlacementRadius: 35
+  luminanceSource: 2
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0

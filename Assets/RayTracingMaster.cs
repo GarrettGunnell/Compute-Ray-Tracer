@@ -12,11 +12,21 @@ public class RayTracingMaster : MonoBehaviour {
     public Vector2 sphereRadius = new Vector2(3.0f, 8.0f);
     public uint maxSpheres = 100;
     public float spherePlacementRadius = 100.0f;
+    public enum LuminanceMode {Alpha, Green, Calculate }
+    public LuminanceMode luminanceSource;
+    [Range(0.0312f, 0.0833f)]
+    public float contrastThreshold = 0.0312f;
+    [Range(0.063f, 0.333f)]
+    public float relativeThreshold = 0.063f;
+    [Range(0f, 1f)]
+    public float subpixelBlending = 1f;
 
     private ComputeBuffer _SphereBuffer;
     private RenderTexture target;
-    private uint currentSample = 0;
     private Material aliasing;
+
+    const int LUMINANCE_PASS = 0;
+    const int FXAA_PASS = 1;
 
     struct Sphere {
         public Vector3 position;
@@ -26,7 +36,6 @@ public class RayTracingMaster : MonoBehaviour {
     }
 
     private void OnEnable() {
-        currentSample = 0;
         SetUpSceneWithCompute();
     }
 
@@ -53,11 +62,6 @@ public class RayTracingMaster : MonoBehaviour {
     }
 
     private void Update() {
-        if (transform.hasChanged) {
-            currentSample = 0;
-            transform.hasChanged = false;
-        }
-
         if (DirectionalLight.transform.hasChanged) {
             Vector3 l = DirectionalLight.transform.forward;
             RayTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, DirectionalLight.intensity));
@@ -71,7 +75,6 @@ public class RayTracingMaster : MonoBehaviour {
         RayTracingShader.SetMatrix("_CameraToWorld", camera.cameraToWorldMatrix);
         RayTracingShader.SetMatrix("_CameraInverseProjection", camera.projectionMatrix.inverse);
         RayTracingShader.SetTexture(0, "_SkyboxTexture", SkyboxTexture);
-        RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
         Vector3 l = DirectionalLight.transform.forward;
         RayTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, DirectionalLight.intensity));
         RayTracingShader.SetBuffer(0, "_Spheres", _SphereBuffer);
@@ -81,11 +84,7 @@ public class RayTracingMaster : MonoBehaviour {
         int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
         RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
 
-        aliasing.SetFloat("_Sample", currentSample);
-
-
-        Graphics.Blit(target, destination, aliasing);
-        currentSample++;
+        HandleAliasing(destination);
     }
 
     private void InitShaders() {
@@ -97,6 +96,27 @@ public class RayTracingMaster : MonoBehaviour {
             target.Create();
         }
 
-        if (aliasing == null) aliasing = new Material(Shader.Find("Hidden/AntiAliasing"));
+        if (aliasing == null) aliasing = new Material(Shader.Find("Hidden/FXAA"));
+    }
+
+    private void HandleAliasing(RenderTexture destination) {
+        aliasing.SetFloat("_ContrastThreshold", contrastThreshold);
+        aliasing.SetFloat("_RelativeThreshold", relativeThreshold);
+        aliasing.SetFloat("_SubpixelBlending", subpixelBlending);
+
+        if (luminanceSource == LuminanceMode.Calculate) {
+            aliasing.DisableKeyword("LUMINANCE_GREEN");
+            RenderTexture luminanceTex = RenderTexture.GetTemporary(target.width, target.height, 0, target.format);
+            Graphics.Blit(target, luminanceTex, aliasing, LUMINANCE_PASS);
+            Graphics.Blit(luminanceTex, destination, aliasing, FXAA_PASS);
+            RenderTexture.ReleaseTemporary(luminanceTex);
+        } else {
+            if (luminanceSource == LuminanceMode.Green)
+                aliasing.EnableKeyword("LUMINANCE_GREEN");
+            else
+                aliasing.DisableKeyword("LUMINANCE_GREEN");
+
+            Graphics.Blit(target, destination, aliasing, FXAA_PASS);
+        }
     }
 }

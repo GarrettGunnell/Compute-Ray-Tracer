@@ -141,7 +141,7 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
     uint width, height;
     Result.GetDimensions(width, height);
 
-    float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
+    float2 uv = float2((id.xy) / float2(width, height) * 2.0f - 1.0f);
 
     Ray ray = CreateCameraRay(uv);
 
