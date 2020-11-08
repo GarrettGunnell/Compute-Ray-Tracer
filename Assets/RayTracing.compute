@@ -97,8 +97,10 @@ RayHit Trace(Ray ray) {
     uint numSpheres, stride;
     _Spheres.GetDimensions(numSpheres, stride);
 
-    for (uint i = 0; i < numSpheres; ++i)
+    for (uint i = 0; i < numSpheres; ++i) {
+        if (_Spheres[i].radius == 0.0f) continue;
         IntersectSphere(ray, bestHit, _Spheres[i]);
+    }
 
     IntersectGroundPlane(ray, bestHit);
 
