@@ -151,6 +151,7 @@ void CSMain (uint3 id : SV_DispatchThreadID) {
 
     float3 linearRGB = pow(saturate(result), 1 / 2.2);
     float luminance = 0.2126 * linearRGB.r + 0.7152 * linearRGB.g + 0.0722 * linearRGB.b;
+    luminance = pow(saturate(luminance), 2.2);
     
     Result[id.xy] = float4(result, luminance);
 }
